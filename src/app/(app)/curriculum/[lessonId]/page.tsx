@@ -4,7 +4,7 @@ import { LESSONS, getLesson, getUnit, getWeek } from "@/data/curriculum";
 import { ASSIGNMENTS } from "@/data/assignments";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { DAY_NAMES, LESSON_TYPE_LABELS } from "@/lib/constants";
+import { LESSON_TYPE_LABELS } from "@/lib/constants";
 import { LessonNotes } from "@/components/notes/LessonNotes";
 
 export function generateStaticParams() {
@@ -40,10 +40,12 @@ export default async function LessonViewerPage({
         <Link href="/curriculum" className="hover:text-zinc-200">
           Curriculum
         </Link>
-        <span>/</span>
-        <span>
-          Week {lesson.weekNumber} · {DAY_NAMES[lesson.dayOfWeek]}
-        </span>
+        {unit && (
+          <>
+            <span>/</span>
+            <span>{unit.title}</span>
+          </>
+        )}
       </div>
 
       <div className="mb-6">
