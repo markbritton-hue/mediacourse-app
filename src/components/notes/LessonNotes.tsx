@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, PlayCircle } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/AuthContext";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -111,20 +111,32 @@ function ReadView({ notes }: { notes: NotesDoc }) {
         <p className="whitespace-pre-wrap text-sm text-zinc-200">{notes.notes}</p>
       )}
       {hasLinks && (
-        <ul className="space-y-1.5">
-          {notes.videoLinks.map((link, i) => (
-            <li key={i}>
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+            Video Links
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {notes.videoLinks.map((link, i) => (
               <a
+                key={i}
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-orange-400 hover:text-orange-300 hover:underline"
+                className="flex items-center gap-2.5 rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-3 hover:border-orange-500"
               >
-                {link.title || link.url}
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-600/15 text-orange-400">
+                  <PlayCircle size={16} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-zinc-100">
+                    {link.title || link.url}
+                  </span>
+                  <span className="block truncate text-xs text-[var(--muted)]">{link.url}</span>
+                </span>
               </a>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
