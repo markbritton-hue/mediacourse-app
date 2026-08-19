@@ -1,27 +1,24 @@
 # Media Production Course — Curriculum & Assignments
 
 A static site for a full-year high school Media Production course: a
-browsable 36-week/12-unit curriculum (Week 1 fully written out), a lesson
-viewer, a full-screen classroom Presentation Mode with a segment timer, and
-an assignments list tied back to lessons.
+browsable 37-week/13-unit curriculum (Weeks 1 and 3 fully written out) with
+a lesson viewer, and an assignments list tied back to lessons.
 
 No backend, no database — this deploys as plain static HTML/CSS/JS and runs
 on GitHub Pages.
 
 ## Architecture
 
-- `src/data/curriculum.ts` — the 12 units, 36 weeks, and Week 1's five
-  lessons, hardcoded as typed data. **This file is how you edit the
-  curriculum** — add a `Lesson` object to `LESSONS` to fill in another day.
+- `src/data/curriculum.ts` — all 13 units, 37 weeks, and the lessons for
+  Week 1 (foundations) and Week 3 (cabling and connectors), hardcoded as
+  typed data. **This file is how you edit the curriculum** — add a `Lesson`
+  object to `LESSONS` to fill in another day.
 - `src/data/assignments.ts` — assignments, optionally linked to a lesson via
   `lessonId`.
 - `src/app/(app)/curriculum` — curriculum browser (expandable units → weeks
   → days) and lesson viewer, statically generated from the data above via
   `generateStaticParams`.
 - `src/app/(app)/assignments` — assignment list and detail pages.
-- `src/app/present/[lessonId]` — full-screen Presentation Mode (segment
-  timer, previous/next, hides nothing since there's no teacher-only data
-  layer left to hide).
 - `next.config.ts` sets `output: "export"` so `next build` produces plain
   static files in `out/` — no Node server required to serve it.
 

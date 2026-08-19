@@ -74,6 +74,58 @@ export const ASSIGNMENTS: Assignment[] = [
     lessonId: "w1d5",
     weekNumber: 1,
   },
+  {
+    id: "a6",
+    title: "Cable Identification Worksheet",
+    description: "Match connector photos to their name and best use case.",
+    instructions:
+      "Complete the worksheet identifying SDI/BNC, HDMI, coaxial, and fiber optic video connectors, and note when each would be used on a production.",
+    points: 15,
+    assignmentType: "WRITTEN",
+    lessonId: "w3d1",
+    weekNumber: 3,
+  },
+  {
+    id: "a7",
+    title: "XLR Wiring Diagram",
+    description: "Diagram the three-pin wiring of an XLR connector.",
+    instructions: "Draw and label an XLR connector's three conductors (ground, hot, cold) and briefly explain why balanced wiring resists noise.",
+    points: 15,
+    assignmentType: "WRITTEN",
+    lessonId: "w3d2",
+    weekNumber: 3,
+  },
+  {
+    id: "a8",
+    title: "Video Cable Run Sign-Off",
+    description: "Build and confirm a working camera-to-monitor cable run.",
+    instructions: "Complete the checklist: cable routed safely, connectors fully seated, monitor confirms a stable signal.",
+    points: 15,
+    assignmentType: "PRODUCTION",
+    lessonId: "w3d3",
+    weekNumber: 3,
+  },
+  {
+    id: "a9",
+    title: "Audio Fault Diagnosis Write-Up",
+    description: "Diagnose and document a planted fault in an XLR audio chain.",
+    instructions: "Write up what was wrong with your station's faulty cable and the swap-and-isolate steps you used to find it.",
+    points: 15,
+    assignmentType: "WRITTEN",
+    lessonId: "w3d4",
+    weekNumber: 3,
+  },
+  {
+    id: "a10",
+    title: "Cabling Practical Assessment",
+    description: "Cumulative practical test: correctly cable and troubleshoot a video and an audio station.",
+    instructions:
+      "At each station, select the correct cables/connectors, route them safely, confirm a working signal, and correctly diagnose the planted fault.",
+    points: 30,
+    assignmentType: "PRODUCTION",
+    lessonId: "w3d5",
+    weekNumber: 3,
+  },
 ];
 
 export function getAssignment(id: string): Assignment | undefined {
