@@ -20,13 +20,17 @@ export function CardHeader({
   title,
   subtitle,
   action,
+  className = "",
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   action?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4">
+    <div
+      className={`flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4 ${className}`}
+    >
       <div>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
           {title}
