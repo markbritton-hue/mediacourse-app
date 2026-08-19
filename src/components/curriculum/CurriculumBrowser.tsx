@@ -2,51 +2,36 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import {
-  DAY_NAMES,
-  LESSON_STATUS_COLORS,
-  LESSON_STATUS_LABELS,
-  LESSON_TYPE_LABELS,
-} from "@/lib/constants";
-import type { CurriculumWeeks } from "@/lib/queries";
+import { DAY_NAMES, LESSON_TYPE_LABELS } from "@/lib/constants";
+import type { Unit, Week, Lesson } from "@/data/curriculum";
 
-type Weeks = CurriculumWeeks;
-
-export function CurriculumBrowser({ weeks }: { weeks: Weeks }) {
-  // group by unit, preserving week order
-  const groups: { unitId: string | null; unitTitle: string; unitNumber: number | null; weeks: Weeks }[] = [];
-  for (const week of weeks) {
-    const unitId = week.unitId;
-    const last = groups[groups.length - 1];
-    if (last && last.unitId === unitId) {
-      last.weeks.push(week);
-    } else {
-      groups.push({
-        unitId,
-        unitTitle: week.unit?.title ?? "Unassigned",
-        unitNumber: week.unit?.number ?? null,
-        weeks: [week],
-      });
-    }
-  }
-
+export function CurriculumBrowser({
+  units,
+  weeks,
+  lessons,
+}: {
+  units: Unit[];
+  weeks: Week[];
+  lessons: Lesson[];
+}) {
   return (
     <div className="space-y-4">
-      {groups.map((group) => (
-        <UnitGroup key={`${group.unitId}-${group.weeks[0].id}`} group={group} />
+      {units.map((unit) => (
+        <UnitGroup
+          key={unit.number}
+          unit={unit}
+          weeks={weeks.filter((w) => w.unitNumber === unit.number)}
+          lessons={lessons}
+        />
       ))}
     </div>
   );
 }
 
-function UnitGroup({
-  group,
-}: {
-  group: { unitTitle: string; unitNumber: number | null; weeks: Weeks };
-}) {
-  const [open, setOpen] = useState(group.unitNumber === 1);
+function UnitGroup({ unit, weeks, lessons }: { unit: Unit; weeks: Week[]; lessons: Lesson[] }) {
+  const [open, setOpen] = useState(unit.number === 1);
 
   return (
     <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
@@ -57,16 +42,15 @@ function UnitGroup({
         <div className="flex items-center gap-3">
           {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           <span className="text-sm font-semibold text-white">
-            {group.unitNumber ? `Unit ${group.unitNumber} — ` : ""}
-            {group.unitTitle}
+            Unit {unit.number} — {unit.title}
           </span>
         </div>
-        <span className="text-xs text-[var(--muted)]">{group.weeks.length} weeks</span>
+        <span className="text-xs text-[var(--muted)]">{weeks.length} weeks</span>
       </button>
       {open && (
         <div className="divide-y divide-[var(--border)] border-t border-[var(--border)]">
-          {group.weeks.map((week) => (
-            <WeekRow key={week.id} week={week} />
+          {weeks.map((week) => (
+            <WeekRow key={week.number} week={week} lessons={lessons.filter((l) => l.weekNumber === week.number)} />
           ))}
         </div>
       )}
@@ -74,11 +58,11 @@ function UnitGroup({
   );
 }
 
-function WeekRow({ week }: { week: Weeks[number] }) {
+function WeekRow({ week, lessons }: { week: Week; lessons: Lesson[] }) {
   const [open, setOpen] = useState(week.number === 1);
 
   return (
-    <div id={`week-${week.id}`}>
+    <div id={`week-${week.number}`}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between px-5 py-2.5 pl-10 text-left hover:bg-[var(--surface-2)]"
@@ -90,12 +74,14 @@ function WeekRow({ week }: { week: Weeks[number] }) {
             {week.title ? ` — ${week.title}` : ""}
           </span>
         </div>
-        <span className="text-xs text-[var(--muted)]">{week.lessons.length}/5 days planned</span>
+        <span className="text-xs text-[var(--muted)]">
+          {lessons.length > 0 ? `${lessons.length}/5 days planned` : "Not yet planned"}
+        </span>
       </button>
       {open && (
         <div className="grid grid-cols-1 gap-2 bg-[var(--background)] px-5 py-3 pl-10 sm:grid-cols-5">
           {[1, 2, 3, 4, 5].map((day) => {
-            const lesson = week.lessons.find((l) => l.dayOfWeek === day);
+            const lesson = lessons.find((l) => l.dayOfWeek === day);
             return (
               <div key={day} className="min-h-[92px]">
                 {lesson ? (
@@ -104,24 +90,18 @@ function WeekRow({ week }: { week: Weeks[number] }) {
                     className="flex h-full flex-col justify-between rounded-md border border-[var(--border)] bg-[var(--surface)] p-2.5 hover:border-orange-500"
                   >
                     <div>
-                      <p className="text-[11px] font-medium text-[var(--muted)]">
-                        {DAY_NAMES[day]}
-                      </p>
-                      <p className="mt-0.5 line-clamp-2 text-xs font-medium text-zinc-100">
-                        {lesson.title}
-                      </p>
+                      <p className="text-[11px] font-medium text-[var(--muted)]">{DAY_NAMES[day]}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs font-medium text-zinc-100">{lesson.title}</p>
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1">
-                      <Badge className="bg-zinc-800 text-zinc-400">
-                        {LESSON_TYPE_LABELS[lesson.lessonType]}
-                      </Badge>
-                      <Badge className={LESSON_STATUS_COLORS[lesson.status]}>
-                        {LESSON_STATUS_LABELS[lesson.status]}
-                      </Badge>
-                    </div>
+                    <Badge className="mt-2 bg-zinc-800 text-zinc-400 w-fit">
+                      {LESSON_TYPE_LABELS[lesson.lessonType]}
+                    </Badge>
                   </Link>
                 ) : (
-                  <EmptyDaySlot weekId={week.id} day={day} />
+                  <div className="flex h-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-[var(--border)] p-2.5 text-[var(--muted)]">
+                    <p className="text-[11px] font-medium">{DAY_NAMES[day]}</p>
+                    <p className="text-[11px]">Not yet planned</p>
+                  </div>
                 )}
               </div>
             );
@@ -129,22 +109,5 @@ function WeekRow({ week }: { week: Weeks[number] }) {
         </div>
       )}
     </div>
-  );
-}
-
-function EmptyDaySlot({ weekId, day }: { weekId: string; day: number }) {
-  return (
-    <form
-      action={`/api/lessons/create`}
-      method="POST"
-      className="flex h-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-[var(--border)] p-2.5 text-[var(--muted)] hover:border-zinc-500 hover:text-zinc-300"
-    >
-      <input type="hidden" name="weekId" value={weekId} />
-      <input type="hidden" name="dayOfWeek" value={day} />
-      <p className="text-[11px] font-medium">{DAY_NAMES[day]}</p>
-      <button type="submit" className="flex items-center gap-1 text-xs">
-        <Plus size={12} /> Add lesson
-      </button>
-    </form>
   );
 }

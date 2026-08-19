@@ -1,8 +1,14 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { ASSIGNMENTS, getAssignment } from "@/data/assignments";
+import { getLesson } from "@/data/curriculum";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { ASSIGNMENT_TYPE_LABELS } from "@/lib/constants";
+
+export function generateStaticParams() {
+  return ASSIGNMENTS.map((a) => ({ assignmentId: a.id }));
+}
 
 export default async function AssignmentDetailPage({
   params,
@@ -10,22 +16,18 @@ export default async function AssignmentDetailPage({
   params: Promise<{ assignmentId: string }>;
 }) {
   const { assignmentId } = await params;
-  const assignment = await prisma.assignment.findUnique({
-    where: { id: assignmentId },
-    include: { submissions: { include: { student: true } } },
-  });
+  const assignment = getAssignment(assignmentId);
   if (!assignment) notFound();
+
+  const lesson = assignment.lessonId ? getLesson(assignment.lessonId) : undefined;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-white">{assignment.title}</h1>
         <div className="mt-2 flex gap-2">
-          <Badge className="bg-zinc-800 text-zinc-300">{assignment.assignmentType}</Badge>
+          <Badge className="bg-zinc-800 text-zinc-300">{ASSIGNMENT_TYPE_LABELS[assignment.assignmentType]}</Badge>
           <Badge className="bg-zinc-800 text-zinc-300">{assignment.points} pts</Badge>
-          {assignment.dueDate && (
-            <Badge className="bg-zinc-800 text-zinc-300">Due {assignment.dueDate.toLocaleDateString()}</Badge>
-          )}
         </div>
       </div>
 
@@ -42,25 +44,16 @@ export default async function AssignmentDetailPage({
         </CardBody>
       </Card>
 
-      <Card>
-        <CardHeader title="Submissions" subtitle="Student submission portal is planned for Phase 5" />
-        <CardBody>
-          {assignment.submissions.length === 0 ? (
-            <EmptyState title="No submissions yet" description="Student login and submission workflow ships in a later phase." />
-          ) : (
-            <ul className="divide-y divide-[var(--border)]">
-              {assignment.submissions.map((s) => (
-                <li key={s.id} className="flex items-center justify-between py-2">
-                  <p className="text-sm text-zinc-200">
-                    {s.student.firstName} {s.student.lastName}
-                  </p>
-                  <Badge className="bg-zinc-800 text-zinc-300">{s.status}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardBody>
-      </Card>
+      {lesson && (
+        <Card>
+          <CardHeader title="From Lesson" />
+          <CardBody>
+            <Link href={`/curriculum/${lesson.id}`} className="text-sm text-orange-400 hover:text-orange-300">
+              Week {lesson.weekNumber} — {lesson.title}
+            </Link>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

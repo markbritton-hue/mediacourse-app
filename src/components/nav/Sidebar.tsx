@@ -2,37 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Calendar,
-  Users,
-  ClipboardList,
-  Clapperboard,
-  Sparkles,
-  UserCog,
-  Wrench,
-  GraduationCap,
-  FolderOpen,
-  Library,
-  Settings,
-  Video,
-} from "lucide-react";
+import { BookOpen, ClipboardList, Video } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/curriculum", label: "Curriculum", icon: BookOpen },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/students", label: "Students", icon: Users },
   { href: "/assignments", label: "Assignments", icon: ClipboardList },
-  { href: "/projects", label: "Projects", icon: Clapperboard },
-  { href: "/skills", label: "Skills", icon: Sparkles },
-  { href: "/roles", label: "Production Roles", icon: UserCog },
-  { href: "/equipment", label: "Equipment", icon: Wrench },
-  { href: "/grades", label: "Grades", icon: GraduationCap },
-  { href: "/portfolios", label: "Student Portfolios", icon: FolderOpen },
-  { href: "/resources", label: "Resources", icon: Library },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
