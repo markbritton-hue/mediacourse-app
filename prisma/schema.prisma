@@ -1,0 +1,777 @@
+// Media Production Course Platform — Database Schema
+// Designed as a relational schema (not one giant table) covering
+// curriculum, instruction, skills/roles tracking, equipment, grading,
+// and student portfolios. Auth/multi-user scaffolding included for
+// future phases (student login).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------------------
+// USERS / ROLES
+// ------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      UserRole @default(TEACHER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacherProfile Teacher?
+  studentProfile Student?
+}
+
+model Teacher {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title  String?
+
+  courses Course[]
+}
+
+model Student {
+  id            String   @id @default(cuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  firstName     String
+  lastName      String
+  classPeriod   String?
+  gradeLevel    String?
+  photoUrl      String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  courseEnrollments   CourseEnrollment[]
+  submissions         Submission[]
+  studentSkills       StudentSkill[]
+  productionRoles     StudentProductionRole[]
+  practicalResults    PracticalTestResult[]
+  grades              Grade[]
+  portfolioItems      PortfolioItem[]
+  quizAttempts        QuizAttempt[]
+  teacherNotes        StudentNote[]
+  equipmentCheckouts  EquipmentCheckout[]
+  projectMembers      ProjectMember[]
+}
+
+// ------------------------------------------------------------------
+// COURSE / SCHOOL YEAR / CURRICULUM HIERARCHY
+// ------------------------------------------------------------------
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  teacherId   String?
+  teacher     Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  schoolYears       SchoolYear[]
+  units             Unit[]
+  enrollments       CourseEnrollment[]
+  gradingCategories GradingCategory[]
+  productionRoleDefs ProductionRoleDef[]
+  skillCategories   SkillCategory[]
+  equipmentItems    Equipment[]
+  resources         Resource[]
+}
+
+model SchoolYear {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  label     String   // e.g. "2026-2027"
+  startDate DateTime
+  endDate   DateTime
+
+  weeks          Week[]
+  calendarEvents CalendarEvent[]
+}
+
+model CourseEnrollment {
+  id        String  @id @default(cuid())
+  courseId  String
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+}
+
+model Unit {
+  id          String @id @default(cuid())
+  courseId    String
+  course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  number      Int
+  title       String
+  description String?
+  weekCount   Int
+  color       String? // UI accent color
+
+  weeks       Week[]
+  assignments Assignment[]
+  projects    Project[]
+
+  @@unique([courseId, number])
+}
+
+model Week {
+  id           String     @id @default(cuid())
+  schoolYearId String
+  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  unitId       String?
+  unit         Unit?      @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  number       Int        // 1-36
+  title        String?
+
+  lessons Lesson[]
+
+  @@unique([schoolYearId, number])
+}
+
+enum LessonType {
+  INSTRUCTION
+  DEMONSTRATION
+  CAMERA_LAB
+  AUDIO_LAB
+  EDITING_LAB
+  STREAMING_LAB
+  PRODUCTION_LAB
+  PROJECT_WORK
+  LIVE_PRODUCTION
+  QUIZ
+  PRACTICAL_TEST
+  REVIEW
+  CRITIQUE
+  CAPSTONE
+}
+
+enum LessonStatus {
+  PLANNED
+  COMPLETE
+  PARTIAL
+  SKIPPED
+  RESCHEDULED
+  CANCELLED
+}
+
+model Lesson {
+  id          String       @id @default(cuid())
+  weekId      String
+  week        Week         @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  lessonNumber Int         // sequential 1..180
+  dayOfWeek   Int          // 1=Mon..5=Fri (informational; actual date via CalendarEvent)
+  scheduledDate DateTime?
+  title       String
+  duration    Int          @default(60) // minutes
+  lessonType  LessonType   @default(INSTRUCTION)
+  status      LessonStatus @default(PLANNED)
+  orderIndex  Int          @default(0)
+
+  objective            String?
+  essentialQuestion    String?
+  vocabulary           String[] @default([])
+  teacherPrep          String?
+  requiredEquipment    String?
+  introduction         String?
+  demonstration        String?
+  content              String?
+  handsOnActivity      String?
+  productionLab        String?
+  studentAssignmentText String?
+  assessment           String?
+  exitTicket           String?
+  homework             String?
+  teacherNotes         String?
+  standards            String?
+
+  timingBellwork   Int @default(5)
+  timingInstruct   Int @default(10)
+  timingDemo       Int @default(10)
+  timingHandsOn    Int @default(25)
+  timingCleanup    Int @default(5)
+  timingReview     Int @default(5)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activities     LessonActivity[]
+  assignments    Assignment[]
+  attachments    Attachment[]
+  calendarEvents CalendarEvent[]
+
+  @@unique([weekId, dayOfWeek])
+}
+
+model LessonActivity {
+  id        String  @id @default(cuid())
+  lessonId  String
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title     String
+  minutes   Int
+  orderIndex Int    @default(0)
+  notes     String?
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  lessonId   String?
+  lesson     Lesson?  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  assignmentId String?
+  assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  title      String
+  url        String
+  kind       String   // pdf, video, link, doc, image
+  createdAt  DateTime @default(now())
+}
+
+// ------------------------------------------------------------------
+// ASSIGNMENTS / SUBMISSIONS
+// ------------------------------------------------------------------
+
+enum AssignmentType {
+  WRITTEN
+  VIDEO
+  AUDIO
+  PHOTOGRAPHY
+  EDITING
+  PRODUCTION
+  RESEARCH
+  REFLECTION
+}
+
+model Assignment {
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  instructions  String?
+  dueDate       DateTime?
+  points        Int            @default(100)
+  lessonId      String?
+  lesson        Lesson?        @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  unitId        String?
+  unit          Unit?          @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  rubricId      String?
+  rubric        Rubric?        @relation(fields: [rubricId], references: [id], onDelete: SetNull)
+  assignmentType AssignmentType @default(WRITTEN)
+  submissionRequired Boolean   @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  attachments Attachment[]
+  submissions Submission[]
+  grades      Grade[]
+}
+
+enum SubmissionStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  LATE
+  GRADED
+  RETURNED
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status       SubmissionStatus @default(NOT_SUBMITTED)
+  submittedAt  DateTime?
+  content      String?
+  fileUrl      String?
+  feedback     String?
+
+  @@unique([assignmentId, studentId])
+}
+
+// ------------------------------------------------------------------
+// PROJECTS / PRODUCTIONS
+// ------------------------------------------------------------------
+
+enum ProjectStatus {
+  PLANNING
+  PRE_PRODUCTION
+  PRODUCTION
+  POST_PRODUCTION
+  COMPLETE
+  ARCHIVED
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  name          String
+  description   String?
+  objective     String?
+  unitId        String?
+  unit          Unit?         @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  dueDate       DateTime?
+  preProduction String?
+  production    String?
+  postProduction String?
+  requiredEquipment String?
+  requiredFiles String?
+  deliverables  String?
+  rubricId      String?
+  rubric        Rubric?       @relation(fields: [rubricId], references: [id], onDelete: SetNull)
+  status        ProjectStatus @default(PLANNING)
+  teacherNotes  String?
+  studentNotes  String?
+  createdAt     DateTime      @default(now())
+
+  members        ProjectMember[]
+  productions    Production[]
+  portfolioItems PortfolioItem[]
+  calendarEvents CalendarEvent[]
+}
+
+model ProjectMember {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, studentId])
+}
+
+// A Production is a discrete crewed shoot/broadcast event (may or may not tie to a Project)
+model Production {
+  id        String   @id @default(cuid())
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title     String
+  date      DateTime?
+  notes     String?
+
+  roleAssignments StudentProductionRole[]
+}
+
+// ------------------------------------------------------------------
+// PRODUCTION ROLES
+// ------------------------------------------------------------------
+
+model ProductionRoleDef {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name     String // Producer, Director, Camera Operator 1, etc.
+  category String? // Camera, Audio, Direction, Graphics, Talent
+
+  assignments StudentProductionRole[]
+
+  @@unique([courseId, name])
+}
+
+model StudentProductionRole {
+  id            String            @id @default(cuid())
+  studentId     String
+  student       Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  roleId        String
+  role          ProductionRoleDef @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  productionId  String?
+  production    Production?       @relation(fields: [productionId], references: [id], onDelete: SetNull)
+  date          DateTime          @default(now())
+  notes         String?
+}
+
+// ------------------------------------------------------------------
+// SKILLS TRACKING
+// ------------------------------------------------------------------
+
+model SkillCategory {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name     String // Camera Skills, Audio Skills, ...
+  orderIndex Int  @default(0)
+
+  skills Skill[]
+}
+
+model Skill {
+  id         String        @id @default(cuid())
+  categoryId String
+  category   SkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  description String?
+  orderIndex Int @default(0)
+
+  studentSkills StudentSkill[]
+  equipmentLinks EquipmentSkill[]
+}
+
+enum SkillLevel {
+  NOT_INTRODUCED
+  INTRODUCED
+  PRACTICING
+  COMPETENT
+  PROFICIENT
+  MASTERED
+}
+
+model StudentSkill {
+  id          String     @id @default(cuid())
+  studentId   String
+  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skillId     String
+  skill       Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  level       SkillLevel @default(NOT_INTRODUCED)
+  dateAchieved DateTime?
+  teacherNotes String?
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([studentId, skillId])
+}
+
+// ------------------------------------------------------------------
+// PRACTICAL TESTS
+// ------------------------------------------------------------------
+
+model PracticalTest {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  items   PracticalTestItem[]
+  results PracticalTestResult[]
+}
+
+model PracticalTestItem {
+  id         String        @id @default(cuid())
+  testId     String
+  test       PracticalTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  description String
+  orderIndex Int @default(0)
+
+  results PracticalTestItemResult[]
+}
+
+enum PracticalRating {
+  PASS
+  NEEDS_IMPROVEMENT
+  FAIL
+}
+
+model PracticalTestResult {
+  id        String        @id @default(cuid())
+  testId    String
+  test      PracticalTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime      @default(now())
+  comments  String?
+
+  itemResults PracticalTestItemResult[]
+
+  @@unique([testId, studentId, date])
+}
+
+model PracticalTestItemResult {
+  id          String               @id @default(cuid())
+  resultId    String
+  result      PracticalTestResult  @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  itemId      String
+  item        PracticalTestItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  rating      PracticalRating
+  comments    String?
+
+  @@unique([resultId, itemId])
+}
+
+// ------------------------------------------------------------------
+// TROUBLESHOOTING SCENARIOS
+// ------------------------------------------------------------------
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+model TroubleshootingScenario {
+  id              String          @id @default(cuid())
+  title           String
+  problem         String
+  symptoms        String
+  equipmentInvolved String?
+  possibleCauses  String
+  hints           String?
+  correctDiagnosis String
+  solution        String
+  difficulty      DifficultyLevel @default(BEGINNER)
+  createdAt       DateTime        @default(now())
+}
+
+// ------------------------------------------------------------------
+// RUBRICS / GRADING
+// ------------------------------------------------------------------
+
+model Rubric {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+
+  categories  RubricCategory[]
+  assignments Assignment[]
+  projects    Project[]
+}
+
+enum RubricRating {
+  EXCELLENT
+  PROFICIENT
+  DEVELOPING
+  NEEDS_IMPROVEMENT
+}
+
+model RubricCategory {
+  id        String @id @default(cuid())
+  rubricId  String
+  rubric    Rubric @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+  name      String
+  maxPoints Int    @default(10)
+  orderIndex Int   @default(0)
+}
+
+model GradingCategory {
+  id         String @id @default(cuid())
+  courseId   String
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name       String
+  weightPct  Float
+
+  grades Grade[]
+}
+
+model Grade {
+  id           String           @id @default(cuid())
+  studentId    String
+  student      Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     GradingCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  assignmentId String?
+  assignment   Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  pointsEarned Float
+  pointsPossible Float
+  comments     String?
+  date         DateTime         @default(now())
+}
+
+// ------------------------------------------------------------------
+// EQUIPMENT
+// ------------------------------------------------------------------
+
+enum EquipmentCategory {
+  CAMERAS
+  LENSES
+  TRIPODS
+  MICROPHONES
+  WIRELESS_AUDIO
+  AUDIO_MIXERS
+  VIDEO_SWITCHERS
+  ENCODERS
+  COMPUTERS
+  MONITORS
+  LIGHTING
+  CABLES
+  ADAPTERS
+  STREAMING_DEVICES
+  NETWORK_EQUIPMENT
+  ACCESSORIES
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  CHECKED_OUT
+  IN_USE
+  NEEDS_REPAIR
+  RETIRED
+}
+
+model Equipment {
+  id              String            @id @default(cuid())
+  courseId        String
+  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  manufacturer    String
+  model           String
+  category        EquipmentCategory
+  quantity        Int               @default(1)
+  assetNumber     String?
+  location        String?
+  status          EquipmentStatus   @default(AVAILABLE)
+  notes           String?
+  manualUrl       String?
+  trainingRequired Boolean          @default(false)
+
+  skillLinks  EquipmentSkill[]
+  checkouts   EquipmentCheckout[]
+
+  @@unique([courseId, assetNumber])
+}
+
+model EquipmentSkill {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  skillId     String
+  skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([equipmentId, skillId])
+}
+
+model EquipmentCheckout {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  studentId   String?
+  student     Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  checkedOutAt DateTime @default(now())
+  returnedAt  DateTime?
+  notes       String?
+}
+
+// ------------------------------------------------------------------
+// RESOURCES
+// ------------------------------------------------------------------
+
+enum ResourceKind {
+  PDF
+  VIDEO_LINK
+  WEBSITE_LINK
+  DOCUMENT
+  IMAGE
+  DIAGRAM
+  TEACHER_NOTES
+}
+
+model Resource {
+  id       String       @id @default(cuid())
+  courseId String
+  course   Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  category String       // Camera, Audio, Lighting, Editing, Streaming, NDI, SRT, RTMP, Networking, Sports, Broadcasting, Graphics, Troubleshooting
+  kind     ResourceKind
+  url      String?
+  notes    String?
+  createdAt DateTime    @default(now())
+}
+
+// ------------------------------------------------------------------
+// PORTFOLIO
+// ------------------------------------------------------------------
+
+model PortfolioItem {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  date        DateTime @default(now())
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  studentRole String?
+  description String?
+  videoUrl    String?
+  imageUrl    String?
+  fileUrl     String?
+  teacherEvaluation String?
+  studentReflection String?
+  skillsDemonstrated String[] @default([])
+}
+
+// ------------------------------------------------------------------
+// CALENDAR
+// ------------------------------------------------------------------
+
+enum CalendarEventType {
+  LESSON
+  PROJECT_DUE
+  PRODUCTION
+  TEST
+  SCHOOL_EVENT
+  CANCELLATION
+  SPECIAL_EVENT
+  PRODUCTION_DAY
+}
+
+model CalendarEvent {
+  id           String            @id @default(cuid())
+  schoolYearId String
+  schoolYear   SchoolYear        @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  date         DateTime
+  type         CalendarEventType
+  title        String
+  lessonId     String?
+  lesson       Lesson?           @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  projectId    String?
+  project      Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  notes        String?
+}
+
+// ------------------------------------------------------------------
+// QUIZZES
+// ------------------------------------------------------------------
+
+model Quiz {
+  id        String @id @default(cuid())
+  title     String
+  description String?
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+model QuizQuestion {
+  id       String       @id @default(cuid())
+  quizId   String
+  quiz     Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  prompt   String
+  type     QuestionType @default(MULTIPLE_CHOICE)
+  options  String[]     @default([])
+  correctAnswer String
+  orderIndex Int @default(0)
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score     Float?
+  submittedAt DateTime?
+}
+
+// ------------------------------------------------------------------
+// STUDENT NOTES (teacher-authored, private by default)
+// ------------------------------------------------------------------
+
+model StudentNote {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  note      String
+  createdAt DateTime @default(now())
+}
