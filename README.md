@@ -1,11 +1,15 @@
 # Media Production Course — Curriculum & Assignments
 
 A static site for a full-year high school Media Production course: a
-browsable 37-week/13-unit curriculum (Weeks 1 and 3 fully written out) with
-a lesson viewer, and an assignments list tied back to lessons.
+browsable 37-week/13-unit curriculum (Weeks 1, 3, 4, 5, and 6 fully written
+out) with a lesson viewer, an assignments list tied back to lessons, and a
+per-lesson Notes & Video Links editor.
 
-No backend, no database — this deploys as plain static HTML/CSS/JS and runs
-on GitHub Pages.
+The site itself is a static export with no server — it deploys as plain
+HTML/CSS/JS and runs on GitHub Pages. The one piece of dynamic data (lesson
+notes/video links) is stored in Firebase (Firestore + Auth) and read/written
+directly from the browser, so it stays in sync across devices without
+needing a server of our own.
 
 ## Architecture
 
@@ -19,8 +23,23 @@ on GitHub Pages.
   → days) and lesson viewer, statically generated from the data above via
   `generateStaticParams`.
 - `src/app/(app)/assignments` — assignment list and detail pages.
+- `src/lib/firebase.ts` — Firebase client init. The config object here is
+  not secret (it identifies the project, not a credential); access control
+  is entirely in Firestore Security Rules.
+- `src/components/notes/LessonNotes.tsx` — per-lesson Notes & Video Links
+  editor. Reads live from Firestore (`lessonNotes/{lessonId}` documents,
+  visible to everyone). Editing requires Firebase Auth sign-in.
 - `next.config.ts` sets `output: "export"` so `next build` produces plain
   static files in `out/` — no Node server required to serve it.
+
+### Editing access (teacher notes)
+
+Anyone can view a lesson's notes/links; only a signed-in user can edit them.
+There's exactly one account, created directly in the Firebase console
+(**Authentication → Users → Add user**) — sign in on the lesson page with
+that email and password to unlock editing. Firestore's rules
+(`lessonNotes/{lessonId}`: `allow read: if true; allow write: if request.auth != null;`)
+are what actually enforce this — the UI is just a form around it.
 
 ## Local development
 

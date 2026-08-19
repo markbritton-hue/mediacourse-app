@@ -5,6 +5,7 @@ import { ASSIGNMENTS } from "@/data/assignments";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { DAY_NAMES, LESSON_TYPE_LABELS } from "@/lib/constants";
+import { LessonNotes } from "@/components/notes/LessonNotes";
 
 export function generateStaticParams() {
   return LESSONS.map((l) => ({ lessonId: l.id }));
@@ -97,6 +98,8 @@ export default async function LessonViewerPage({
             <Field label="Homework" value={lesson.homework} />
           </CardBody>
         </Card>
+
+        <LessonNotes lessonId={lesson.id} />
 
         {relatedAssignments.length > 0 && (
           <Card>
