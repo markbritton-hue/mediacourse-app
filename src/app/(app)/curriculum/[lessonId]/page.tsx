@@ -4,7 +4,6 @@ import { LESSONS, getLesson, getUnit, getWeek } from "@/data/curriculum";
 import { ASSIGNMENTS } from "@/data/assignments";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { LinkButton } from "@/components/ui/Button";
 import { DAY_NAMES, LESSON_TYPE_LABELS } from "@/lib/constants";
 
 export function generateStaticParams() {
@@ -34,15 +33,6 @@ export default async function LessonViewerPage({
   const unit = week ? getUnit(week.unitNumber) : undefined;
   const relatedAssignments = ASSIGNMENTS.filter((a) => a.lessonId === lesson.id);
 
-  const timing = [
-    { label: "Bell work / Intro", minutes: lesson.timing.bellwork },
-    { label: "Instruction", minutes: lesson.timing.instruct },
-    { label: "Demonstration", minutes: lesson.timing.demo },
-    { label: "Hands-on / Production", minutes: lesson.timing.handsOn },
-    { label: "Cleanup", minutes: lesson.timing.cleanup },
-    { label: "Review / Exit Ticket", minutes: lesson.timing.review },
-  ];
-
   return (
     <div className="mx-auto max-w-4xl pb-16">
       <div className="mb-1 flex items-center gap-2 text-xs text-[var(--muted)]">
@@ -55,19 +45,14 @@ export default async function LessonViewerPage({
         </span>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-white">{lesson.title}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge className="bg-zinc-800 text-zinc-300">Lesson {lesson.lessonNumber}</Badge>
-            <Badge className="bg-zinc-800 text-zinc-300">{LESSON_TYPE_LABELS[lesson.lessonType]}</Badge>
-            <Badge className="bg-zinc-800 text-zinc-300">{lesson.duration} min</Badge>
-            {unit && <Badge className="bg-zinc-800 text-zinc-300">{unit.title}</Badge>}
-          </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-white">{lesson.title}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Badge className="bg-zinc-800 text-zinc-300">Lesson {lesson.lessonNumber}</Badge>
+          <Badge className="bg-zinc-800 text-zinc-300">{LESSON_TYPE_LABELS[lesson.lessonType]}</Badge>
+          <Badge className="bg-zinc-800 text-zinc-300">{lesson.duration} min</Badge>
+          {unit && <Badge className="bg-zinc-800 text-zinc-300">{unit.title}</Badge>}
         </div>
-        <LinkButton href={`/present/${lesson.id}`} variant="primary">
-          Start Lesson
-        </LinkButton>
       </div>
 
       <div className="space-y-4">
@@ -89,20 +74,6 @@ export default async function LessonViewerPage({
               </div>
             )}
             <Field label="Required Equipment" value={lesson.requiredEquipment} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title="60-Minute Structure" subtitle={`Total: ${timing.reduce((a, t) => a + t.minutes, 0)} min`} />
-          <CardBody>
-            <div className="flex flex-wrap gap-2">
-              {timing.map((t) => (
-                <div key={t.label} className="flex-1 min-w-[120px] rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-3 text-center">
-                  <p className="text-lg font-semibold text-orange-400">{t.minutes}′</p>
-                  <p className="mt-0.5 text-[11px] text-[var(--muted)]">{t.label}</p>
-                </div>
-              ))}
-            </div>
           </CardBody>
         </Card>
 
