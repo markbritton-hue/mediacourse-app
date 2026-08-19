@@ -1,15 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  type User,
-} from "firebase/auth";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
-import { Pencil, Plus, Trash2, LogIn, LogOut } from "lucide-react";
-import { auth, db } from "@/lib/firebase";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 
 interface VideoLink {
@@ -25,27 +20,13 @@ interface NotesDoc {
 const EMPTY: NotesDoc = { notes: "", videoLinks: [] };
 
 export function LessonNotes({ lessonId }: { lessonId: string }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const { user, authChecked } = useAuth();
   const [saved, setSaved] = useState<NotesDoc>(EMPTY);
   const [loaded, setLoaded] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<NotesDoc>(EMPTY);
   const [saving, setSaving] = useState(false);
-
-  const [showSignIn, setShowSignIn] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [signingIn, setSigningIn] = useState(false);
-
-  useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setAuthChecked(true);
-    });
-  }, []);
 
   useEffect(() => {
     return onSnapshot(doc(db, "lessonNotes", lessonId), (snap) => {
@@ -81,93 +62,23 @@ export function LessonNotes({ lessonId }: { lessonId: string }) {
     }
   }
 
-  async function handleSignIn(e: React.FormEvent) {
-    e.preventDefault();
-    setAuthError(null);
-    setSigningIn(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setShowSignIn(false);
-      setEmail("");
-      setPassword("");
-    } catch {
-      setAuthError("Sign-in failed. Check the email and password.");
-    } finally {
-      setSigningIn(false);
-    }
-  }
-
   return (
     <Card>
       <CardHeader
         title="Teacher Notes & Video Links"
         subtitle="Visible to anyone viewing this lesson"
         action={
-          authChecked &&
-          (user ? (
-            !editing && (
-              <div className="flex gap-2">
-                <button
-                  onClick={startEditing}
-                  className="flex items-center gap-1.5 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-[var(--surface-2)]"
-                >
-                  <Pencil size={13} /> Edit
-                </button>
-                <button
-                  onClick={() => signOut(auth)}
-                  className="flex items-center gap-1.5 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-zinc-400 hover:bg-[var(--surface-2)]"
-                >
-                  <LogOut size={13} /> Sign Out
-                </button>
-              </div>
-            )
-          ) : (
+          authChecked && user && !editing ? (
             <button
-              onClick={() => setShowSignIn((v) => !v)}
-              className="flex items-center gap-1.5 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-zinc-400 hover:bg-[var(--surface-2)]"
+              onClick={startEditing}
+              className="flex items-center gap-1.5 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-[var(--surface-2)]"
             >
-              <LogIn size={13} /> Teacher Sign In
+              <Pencil size={13} /> Edit
             </button>
-          ))
+          ) : undefined
         }
       />
       <CardBody className="space-y-4">
-        {showSignIn && !user && (
-          <form
-            onSubmit={handleSignIn}
-            className="flex flex-wrap items-end gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-3"
-          >
-            <div>
-              <label className="mb-1 block text-[11px] text-[var(--muted)]">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-sm text-zinc-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] text-[var(--muted)]">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-sm text-zinc-100"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={signingIn}
-              className="rounded-md bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-500 disabled:opacity-50"
-            >
-              {signingIn ? "Signing in…" : "Sign In"}
-            </button>
-            {authError && <p className="w-full text-xs text-red-400">{authError}</p>}
-          </form>
-        )}
-
         {!loaded ? (
           <p className="text-sm text-[var(--muted)]">Loading…</p>
         ) : editing ? (
