@@ -65,7 +65,8 @@ export function LessonNotes({ lessonId }: { lessonId: string }) {
   return (
     <Card>
       <CardHeader
-        className="rounded-t-lg bg-orange-600/10"
+        className="rounded-t-lg bg-orange-600/15"
+        titleClassName="text-orange-400"
         title="Teacher Notes & Video Links"
         subtitle="Visible to anyone viewing this lesson"
         action={

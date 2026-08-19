@@ -21,18 +21,20 @@ export function CardHeader({
   subtitle,
   action,
   className = "",
+  titleClassName = "text-zinc-300",
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   action?: ReactNode;
   className?: string;
+  titleClassName?: string;
 }) {
   return (
     <div
       className={`flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4 ${className}`}
     >
       <div>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+        <h2 className={`text-sm font-semibold uppercase tracking-wide ${titleClassName}`}>
           {title}
         </h2>
         {subtitle && <p className="mt-1 text-xs text-[var(--muted)]">{subtitle}</p>}
