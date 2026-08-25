@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, NotebookText } from "lucide-react";
+import { collection, onSnapshot } from "firebase/firestore";
 import { Badge } from "@/components/ui/Badge";
 import { LESSON_TYPE_LABELS } from "@/lib/constants";
+import { db } from "@/lib/firebase";
 import type { Unit, Week, Lesson } from "@/data/curriculum";
 
 export function CurriculumBrowser({
@@ -16,6 +18,21 @@ export function CurriculumBrowser({
   weeks: Week[];
   lessons: Lesson[];
 }) {
+  const [lessonsWithNotes, setLessonsWithNotes] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    return onSnapshot(collection(db, "lessonNotes"), (snap) => {
+      const withNotes = new Set<string>();
+      snap.forEach((doc) => {
+        const data = doc.data() as { notes?: string; videoLinks?: unknown[] };
+        if ((data.notes ?? "").trim() || (data.videoLinks ?? []).length > 0) {
+          withNotes.add(doc.id);
+        }
+      });
+      setLessonsWithNotes(withNotes);
+    });
+  }, []);
+
   return (
     <div className="space-y-4">
       {units.map((unit) => {
@@ -26,13 +43,28 @@ export function CurriculumBrowser({
           .filter((l) => unitWeekNumbers.has(l.weekNumber))
           .sort((a, b) => a.lessonNumber - b.lessonNumber);
 
-        return <UnitGroup key={unit.number} unit={unit} lessons={unitLessons} />;
+        return (
+          <UnitGroup
+            key={unit.number}
+            unit={unit}
+            lessons={unitLessons}
+            lessonsWithNotes={lessonsWithNotes}
+          />
+        );
       })}
     </div>
   );
 }
 
-function UnitGroup({ unit, lessons }: { unit: Unit; lessons: Lesson[] }) {
+function UnitGroup({
+  unit,
+  lessons,
+  lessonsWithNotes,
+}: {
+  unit: Unit;
+  lessons: Lesson[];
+  lessonsWithNotes: Set<string>;
+}) {
   const [open, setOpen] = useState(unit.number === 1);
 
   return (
@@ -64,9 +96,19 @@ function UnitGroup({ unit, lessons }: { unit: Unit; lessons: Lesson[] }) {
                   className="flex flex-col justify-between rounded-md border border-[var(--border)] bg-[var(--background)] p-3 hover:border-orange-500"
                 >
                   <div>
-                    <p className="text-[11px] font-medium text-[var(--muted)]">
-                      Lesson {lesson.lessonNumber}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-medium text-[var(--muted)]">
+                        Lesson {lesson.lessonNumber}
+                      </p>
+                      {lessonsWithNotes.has(lesson.id) && (
+                        <span
+                          title="Has teacher notes"
+                          className="flex items-center gap-1 rounded-full bg-orange-600/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-400"
+                        >
+                          <NotebookText size={10} />
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-0.5 line-clamp-2 text-sm font-medium text-zinc-100">
                       {lesson.title}
                     </p>
