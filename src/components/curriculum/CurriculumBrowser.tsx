@@ -103,9 +103,9 @@ function UnitGroup({
                       {lessonsWithNotes.has(lesson.id) && (
                         <span
                           title="Has teacher notes"
-                          className="flex items-center gap-1 rounded-full bg-orange-600/15 px-2 py-1 text-xs font-medium text-orange-400"
+                          className="flex items-center gap-1.5 rounded-full bg-orange-600/15 px-3 py-1.5 text-sm font-medium text-orange-400"
                         >
-                          <NotebookText size={14} />
+                          <NotebookText size={18} />
                         </span>
                       )}
                     </div>
